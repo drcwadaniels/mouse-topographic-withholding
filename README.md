@@ -3,3 +3,4 @@ This repository contains the data and analysis scripts for the experiments repor
 
 * For details on the analysis see the [markdown](TopographyTRModel.md) or [html](TopographyTRModel.html) versions
 * To recreate the analysis download the .mat files and Jupyter Notebook/Lab file (.ipynb)
+* To fit the discussed mixture models see the .m files (you will need all three). Note that different versions of the mixture models are available, they are just commented out. 
