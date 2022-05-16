@@ -34,6 +34,7 @@ import scipy.io as spio
 from scipy.stats import gamma
 from scipy.stats import expon
 import os
+import seaborn as sns
 ```
 
 First we will import the database in storing all IRTs from the experiment and parameter estimates following TR model fitting.
@@ -366,9 +367,9 @@ AICc_FMI_dataframe['deltaAICc'] = AICc_FMI_dataframe.max(axis=1)-AICc_FMI_datafr
 display(AICc_DRL_dataframe)
 ```
 
-    C:\Users\carte\AppData\Local\Temp/ipykernel_6400/228729674.py:55: FutureWarning: Dropping of nuisance columns in DataFrame reductions (with 'numeric_only=None') is deprecated; in a future version this will raise TypeError.  Select only valid columns before calling the reduction.
+    C:\Users\carte\AppData\Local\Temp/ipykernel_916/228729674.py:55: FutureWarning: Dropping of nuisance columns in DataFrame reductions (with 'numeric_only=None') is deprecated; in a future version this will raise TypeError.  Select only valid columns before calling the reduction.
       AICc_DRL_dataframe['deltaAICc'] = AICc_DRL_dataframe.max(axis=1)-AICc_DRL_dataframe.min(axis=1)
-    C:\Users\carte\AppData\Local\Temp/ipykernel_6400/228729674.py:66: FutureWarning: Dropping of nuisance columns in DataFrame reductions (with 'numeric_only=None') is deprecated; in a future version this will raise TypeError.  Select only valid columns before calling the reduction.
+    C:\Users\carte\AppData\Local\Temp/ipykernel_916/228729674.py:66: FutureWarning: Dropping of nuisance columns in DataFrame reductions (with 'numeric_only=None') is deprecated; in a future version this will raise TypeError.  Select only valid columns before calling the reduction.
       AICc_FMI_dataframe['deltaAICc'] = AICc_FMI_dataframe.max(axis=1)-AICc_FMI_dataframe.min(axis=1)
     
 
@@ -516,34 +517,75 @@ for i in range(0,16):
     visDRL_PF6[:,i] = hist
     
 #First we need the parameter estimates
-FMI_B3_params = matlab_database['pcollector_FMI_e1_B3']
-FMI_PF3_params = matlab_database['pcollector_FMI_e1_PF3']
-FMI_B6_params = matlab_database['pcollector_FMI_e1_B6']
-FMI_PF6_params = matlab_database['pcollector_FMI_e1_PF6']
+
+#First grab TRe only
+FMI_B3_params = matlab_database['pcollector_FMI_e1_B3_TRe']
+FMI_PF3_params = matlab_database['pcollector_FMI_e1_PF3_TRe']
+FMI_B6_params = matlab_database['pcollector_FMI_e1_B6_TRe']
+FMI_PF6_params = matlab_database['pcollector_FMI_e1_PF6_TRe']
+
+#Then replace LP with TR only
+#First replace rows 5:6 wit
+FMI_B3_paramsTR = matlab_database['pcollector_FMI_e1_B3']
+FMI_PF3_paramsTR = matlab_database['pcollector_FMI_e1_PF3']
+FMI_B6_paramsTR = matlab_database['pcollector_FMI_e1_B6']
+FMI_PF6_paramsTR = matlab_database['pcollector_FMI_e1_PF6']
+
+FMI_B3_params[0:3,LPindices] = FMI_B3_paramsTR[0:3,LPindices]
+FMI_PF3_params[0:3,LPindices] = FMI_PF3_paramsTR[0:3,LPindices]
+FMI_B6_params[0:3,LPindices] = FMI_B6_paramsTR[0:3,LPindices]
+FMI_PF6_params[0:3,LPindices] = FMI_PF6_paramsTR[0:3,LPindices]
+
+FMI_B3_params[4:FMI_B3_params.shape[1],LPindices] = np.nan
+FMI_PF3_params[4:FMI_B3_params.shape[1],LPindices] = np.nan
+FMI_B6_params[4:FMI_B3_params.shape[1],LPindices] = np.nan
+FMI_PF6_params[4:FMI_B3_params.shape[1],LPindices] = np.nan
+
 visFMI_B3 = np.zeros((fitbins.shape[0]-1,15)) 
 visFMI_B6 = np.zeros((fitbins.shape[0]-1,15)) 
 visFMI_PF3 = np.zeros((fitbins.shape[0]-1,15)) 
 visFMI_PF6 = np.zeros((fitbins.shape[0]-1,15)) 
 for i in range(0,15):
-    cdf = FMI_B3_params[2,i]*gamma.cdf(fitbins[1:len(fitbins)],1+FMI_B3_params[0,i],0,FMI_B3_params[1,i])+(1-FMI_B3_params[2,i])*expon.cdf(fitbins[1:len(fitbins)],0,1/FMI_B3_params[3,i])
-    hist = cdf[0]
-    hist = np.append(hist,np.diff(cdf))
-    visFMI_B3[:,i] = hist
+    if i in LPindices:
+        cdf = FMI_B3_params[2,i]*gamma.cdf(fitbins[1:len(fitbins)],1+FMI_B3_params[0,i],0,FMI_B3_params[1,i])+(1-FMI_B3_params[2,i])*expon.cdf(fitbins[1:len(fitbins)],0,1/FMI_B3_params[3,i])
+        hist = cdf[0]
+        hist = np.append(hist,np.diff(cdf))
+        visFMI_B3[:,i] = hist
     
-    cdf = FMI_B6_params[2,i]*gamma.cdf(fitbins[1:len(fitbins)],1+FMI_B6_params[0,i],0,FMI_B6_params[1,i])+(1-FMI_B6_params[2,i])*expon.cdf(fitbins[1:len(fitbins)],0,1/FMI_B6_params[3,i])
-    hist = cdf[0]
-    hist = np.append(hist,np.diff(cdf))
-    visFMI_B6[:,i] = hist
+        cdf = FMI_B6_params[2,i]*gamma.cdf(fitbins[1:len(fitbins)],1+FMI_B6_params[0,i],0,FMI_B6_params[1,i])+(1-FMI_B6_params[2,i])*expon.cdf(fitbins[1:len(fitbins)],0,1/FMI_B6_params[3,i])
+        hist = cdf[0]
+        hist = np.append(hist,np.diff(cdf))
+        visFMI_B6[:,i] = hist
     
-    cdf = FMI_PF3_params[2,i]*gamma.cdf(fitbins[1:len(fitbins)],1+FMI_PF3_params[0,i],0,FMI_PF3_params[1,i])+(1-FMI_PF3_params[2,i])*expon.cdf(fitbins[1:len(fitbins)],0,1/FMI_PF3_params[3,i])
-    hist = cdf[0]
-    hist = np.append(hist,np.diff(cdf))
-    visFMI_PF3[:,i] = hist
+        cdf = FMI_PF3_params[2,i]*gamma.cdf(fitbins[1:len(fitbins)],1+FMI_PF3_params[0,i],0,FMI_PF3_params[1,i])+(1-FMI_PF3_params[2,i])*expon.cdf(fitbins[1:len(fitbins)],0,1/FMI_PF3_params[3,i])
+        hist = cdf[0]
+        hist = np.append(hist,np.diff(cdf))
+        visFMI_PF3[:,i] = hist
     
-    cdf = FMI_PF6_params[2,i]*gamma.cdf(fitbins[1:len(fitbins)],1+FMI_PF6_params[0,i],0,FMI_PF6_params[1,i])+(1-FMI_PF6_params[2,i])*expon.cdf(fitbins[1:len(fitbins)],0,1/FMI_PF6_params[3,i])
-    hist = cdf[0]
-    hist = np.append(hist,np.diff(cdf))
-    visFMI_PF6[:,i] = hist
+        cdf = FMI_PF6_params[2,i]*gamma.cdf(fitbins[1:len(fitbins)],1+FMI_PF6_params[0,i],0,FMI_PF6_params[1,i])+(1-FMI_PF6_params[2,i])*expon.cdf(fitbins[1:len(fitbins)],0,1/FMI_PF6_params[3,i])
+        hist = cdf[0]
+        hist = np.append(hist,np.diff(cdf))
+        visFMI_PF6[:,i] = hist
+    else:
+        cdf = FMI_B3_params[2,i]*gamma.cdf(fitbins[1:len(fitbins)],1+FMI_B3_params[0,i],0,FMI_B3_params[1,i])+FMI_B3_params[4,i]*expon.cdf(fitbins[1:len(fitbins)],0,1/FMI_B3_params[3,i])+(1-FMI_B3_params[4,i]-FMI_B3_params[2,i])*expon.cdf(fitbins[1:len(fitbins)],0,1/FMI_B3_params[5,i])
+        hist = cdf[0]
+        hist = np.append(hist,np.diff(cdf))
+        visFMI_B3[:,i] = hist
+    
+        cdf = FMI_B6_params[2,i]*gamma.cdf(fitbins[1:len(fitbins)],1+FMI_B6_params[0,i],0,FMI_B6_params[1,i])+FMI_B6_params[4,i]*expon.cdf(fitbins[1:len(fitbins)],0,1/FMI_B6_params[3,i])+(1-FMI_B6_params[4,i]-FMI_B6_params[2,i])*expon.cdf(fitbins[1:len(fitbins)],0,1/FMI_B6_params[5,i])
+        hist = cdf[0]
+        hist = np.append(hist,np.diff(cdf))
+        visFMI_B6[:,i] = hist
+    
+        cdf = FMI_PF3_params[2,i]*gamma.cdf(fitbins[1:len(fitbins)],1+FMI_PF3_params[0,i],0,FMI_PF3_params[1,i])+FMI_PF3_params[4,i]*expon.cdf(fitbins[1:len(fitbins)],0,1/FMI_PF3_params[3,i])+(1-FMI_PF3_params[4,i]-FMI_PF3_params[2,i])*expon.cdf(fitbins[1:len(fitbins)],0,1/FMI_PF3_params[5,i])
+        hist = cdf[0]
+        hist = np.append(hist,np.diff(cdf))
+        visFMI_PF3[:,i] = hist
+    
+        cdf = FMI_PF6_params[2,i]*gamma.cdf(fitbins[1:len(fitbins)],1+FMI_PF6_params[0,i],0,FMI_PF6_params[1,i])+FMI_PF6_params[4,i]*expon.cdf(fitbins[1:len(fitbins)],0,1/FMI_PF6_params[3,i])+(1-FMI_PF6_params[4,i]-FMI_PF6_params[2,i])*expon.cdf(fitbins[1:len(fitbins)],0,1/FMI_PF6_params[5,i])
+        hist = cdf[0]
+        hist = np.append(hist,np.diff(cdf))
+        visFMI_PF6[:,i] = hist        
     
 ```
 
@@ -677,19 +719,241 @@ plt.title('NP FMI')
 
 Now that we've visualized the fit of our model let's analyze model parameters and derived statistics. 
 
-First we will analyze parameters common to all groups of mice in all conditions. 
-* P = the probability of timing
-* q (in TRe) and 1-P (in TR) = the probability of burst responding
+First we will analyze derived statistics of the gamma distribution:
 * mu = the mean timed response
 * sd = variance of timed responses
 * cv = sd/mu
+
+Second we will analyze parameters common to all groups of mice in all conditions. 
+* P = the probability of timing
+* q (in TRe) and 1-P (in TR) = the probability of burst responding
 * K_burst = the mean burst response time
 
 Then we will analyze parameters common to only mice with the TRe model
 * 1-q-P = the probability of lapsed responding
 * K_lapse = the mean lapse response time
 
-**STAY TUNED FOR THE NEXT UPDATE**
+
+
+```python
+#parameters
+all_params=pd.DataFrame(np.concatenate((DRL_B3_params,DRL_PF3_params,DRL_B6_params,DRL_PF6_params,FMI_B3_params,FMI_PF3_params,FMI_B6_params,FMI_PF6_params),axis=0))
+all_params['Schedule'] = np.repeat(['DRL','FMI'],24)
+all_params['Motivation'] = np.repeat(['Baseline','Prefeeding','Baseline','Prefeeding'],12)
+all_params['Interval'] = np.repeat([3,3,6,6,3,3,6,6],6)
+all_params = all_params.melt(id_vars=['Schedule','Motivation','Interval'])
+all_params['params'] = np.tile(['epsilon','c','P','Kburst','q','Klapse'],int(all_params.shape[0]/6))
+all_params['mouseID'] = np.tile([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],int(all_params.shape[0]/16))
+all_params['InitRsp'] = np.tile(colwiseGA,int(all_params.shape[0]/16))
+```
+
+
+```python
+display(all_params)
+```
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Schedule</th>
+      <th>Motivation</th>
+      <th>Interval</th>
+      <th>variable</th>
+      <th>value</th>
+      <th>params</th>
+      <th>mouseID</th>
+      <th>InitRsp</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>DRL</td>
+      <td>Baseline</td>
+      <td>3</td>
+      <td>0</td>
+      <td>27.227397</td>
+      <td>epsilon</td>
+      <td>1</td>
+      <td>LP</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>DRL</td>
+      <td>Baseline</td>
+      <td>3</td>
+      <td>0</td>
+      <td>0.109529</td>
+      <td>c</td>
+      <td>2</td>
+      <td>LP</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>DRL</td>
+      <td>Baseline</td>
+      <td>3</td>
+      <td>0</td>
+      <td>0.752748</td>
+      <td>P</td>
+      <td>3</td>
+      <td>LP</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>DRL</td>
+      <td>Baseline</td>
+      <td>3</td>
+      <td>0</td>
+      <td>2.247934</td>
+      <td>Kburst</td>
+      <td>4</td>
+      <td>NP</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>DRL</td>
+      <td>Baseline</td>
+      <td>3</td>
+      <td>0</td>
+      <td>0.244310</td>
+      <td>q</td>
+      <td>5</td>
+      <td>NP</td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <th>763</th>
+      <td>FMI</td>
+      <td>Prefeeding</td>
+      <td>6</td>
+      <td>15</td>
+      <td>1.211060</td>
+      <td>c</td>
+      <td>12</td>
+      <td>LP</td>
+    </tr>
+    <tr>
+      <th>764</th>
+      <td>FMI</td>
+      <td>Prefeeding</td>
+      <td>6</td>
+      <td>15</td>
+      <td>0.266228</td>
+      <td>P</td>
+      <td>13</td>
+      <td>LP</td>
+    </tr>
+    <tr>
+      <th>765</th>
+      <td>FMI</td>
+      <td>Prefeeding</td>
+      <td>6</td>
+      <td>15</td>
+      <td>1.313623</td>
+      <td>Kburst</td>
+      <td>14</td>
+      <td>LP</td>
+    </tr>
+    <tr>
+      <th>766</th>
+      <td>FMI</td>
+      <td>Prefeeding</td>
+      <td>6</td>
+      <td>15</td>
+      <td>0.151613</td>
+      <td>q</td>
+      <td>15</td>
+      <td>NP</td>
+    </tr>
+    <tr>
+      <th>767</th>
+      <td>FMI</td>
+      <td>Prefeeding</td>
+      <td>6</td>
+      <td>15</td>
+      <td>8.116420</td>
+      <td>Klapse</td>
+      <td>16</td>
+      <td>NP</td>
+    </tr>
+  </tbody>
+</table>
+<p>768 rows × 8 columns</p>
+</div>
+
+
+
+```python
+#derived statistics
+all_derivedstats = pd.DataFrame()
+all_derivedstats['mu'] = all_params.value[all_params['params']=='epsilon'].to_numpy()*all_params.value[all_params['params']=='c'].to_numpy()
+all_derivedstats['sd'] = np.sqrt(all_params.value[all_params['params']=='epsilon'].to_numpy()*np.power(all_params.value[all_params['params']=='c'].to_numpy(),2))
+all_derivedstats['cv'] = all_derivedstats['sd'].to_numpy()/all_derivedstats['mu'].to_numpy()
+all_derivedstats['Schedule'] = np.repeat(['DRL','FMI'],int(all_derivedstats.shape[0]/2))
+all_derivedstats['Motivation'] = np.repeat(['Baseline','Prefeeding','Baseline','Prefeeding','Baseline','Prefeeding','Baseline','Prefeeding'],int(all_derivedstats.shape[0]/8))
+all_derivedstats['Interval'] = np.repeat([3,6,3,6],int(all_derivedstats.shape[0]/4))
+all_derivedstats = all_derivedstats.melt(id_vars=['Schedule','Motivation','Interval'])
+all_derivedstats['mouseID'] = np.tile([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],int(all_derivedstats.shape[0]/16))
+all_derivedstats['InitRsp'] = np.tile(colwiseGA,int(all_derivedstats.shape[0]/16))
+all_derivedstats = all_derivedstats[all_derivedstats['mouseID']<=15]
+```
+
+
+```python
+#Analysis of derived statistics; graphing then analysis
+plt.rc('font', family='serif')
+plt.rc('xtick', labelsize='large')
+plt.rc('ytick', labelsize='large')
+fig3 = plt.figure(figsize=(16,12))
+sns.catplot(x='Interval',y='value',hue='Motivation',col='InitRsp',kind='bar',ci=68,data=all_derivedstats[(all_derivedstats['Schedule']=='FMI') & (all_derivedstats['variable']=='cv')])
+
+```
+
+
+
+
+    <seaborn.axisgrid.FacetGrid at 0x2644955a1c0>
+
+
+
+
+    <Figure size 1152x864 with 0 Axes>
+
+
+
+    
+![png](output_21_2.png)
+    
+
+
+DATA ORGANIZED! READY FOR VISUALIZATION AND ANALYSIS
 
 
 ```python
