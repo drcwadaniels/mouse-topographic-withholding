@@ -35,6 +35,8 @@ from scipy.stats import gamma
 from scipy.stats import expon
 import os
 import seaborn as sns
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
 ```
 
 First we will import the database in storing all IRTs from the experiment and parameter estimates following TR model fitting.
@@ -367,9 +369,9 @@ AICc_FMI_dataframe['deltaAICc'] = AICc_FMI_dataframe.max(axis=1)-AICc_FMI_datafr
 display(AICc_DRL_dataframe)
 ```
 
-    C:\Users\carte\AppData\Local\Temp/ipykernel_916/228729674.py:55: FutureWarning: Dropping of nuisance columns in DataFrame reductions (with 'numeric_only=None') is deprecated; in a future version this will raise TypeError.  Select only valid columns before calling the reduction.
+    C:\Users\carte\AppData\Local\Temp/ipykernel_10696/228729674.py:55: FutureWarning: Dropping of nuisance columns in DataFrame reductions (with 'numeric_only=None') is deprecated; in a future version this will raise TypeError.  Select only valid columns before calling the reduction.
       AICc_DRL_dataframe['deltaAICc'] = AICc_DRL_dataframe.max(axis=1)-AICc_DRL_dataframe.min(axis=1)
-    C:\Users\carte\AppData\Local\Temp/ipykernel_916/228729674.py:66: FutureWarning: Dropping of nuisance columns in DataFrame reductions (with 'numeric_only=None') is deprecated; in a future version this will raise TypeError.  Select only valid columns before calling the reduction.
+    C:\Users\carte\AppData\Local\Temp/ipykernel_10696/228729674.py:66: FutureWarning: Dropping of nuisance columns in DataFrame reductions (with 'numeric_only=None') is deprecated; in a future version this will raise TypeError.  Select only valid columns before calling the reduction.
       AICc_FMI_dataframe['deltaAICc'] = AICc_FMI_dataframe.max(axis=1)-AICc_FMI_dataframe.min(axis=1)
     
 
@@ -739,7 +741,7 @@ Then we will analyze parameters common to only mice with the TRe model
 #parameters
 all_params=pd.DataFrame(np.concatenate((DRL_B3_params,DRL_PF3_params,DRL_B6_params,DRL_PF6_params,FMI_B3_params,FMI_PF3_params,FMI_B6_params,FMI_PF6_params),axis=0))
 all_params['Schedule'] = np.repeat(['DRL','FMI'],24)
-all_params['Motivation'] = np.repeat(['Baseline','Prefeeding','Baseline','Prefeeding'],12)
+all_params['Motivation'] = np.repeat(['Baseline','Prefeeding','Baseline','Prefeeding','Baseline','Prefeeding','Baseline','Prefeeding'],6)
 all_params['Interval'] = np.repeat([3,3,6,6,3,3,6,6],6)
 all_params = all_params.melt(id_vars=['Schedule','Motivation','Interval'])
 all_params['params'] = np.tile(['epsilon','c','P','Kburst','q','Klapse'],int(all_params.shape[0]/6))
@@ -913,17 +915,169 @@ display(all_params)
 ```python
 #derived statistics
 all_derivedstats = pd.DataFrame()
-all_derivedstats['mu'] = all_params.value[all_params['params']=='epsilon'].to_numpy()*all_params.value[all_params['params']=='c'].to_numpy()
-all_derivedstats['sd'] = np.sqrt(all_params.value[all_params['params']=='epsilon'].to_numpy()*np.power(all_params.value[all_params['params']=='c'].to_numpy(),2))
+all_derivedstats['mu'] = (all_params.value[all_params['params']=='epsilon'].to_numpy()+1)*all_params.value[all_params['params']=='c'].to_numpy()
+all_derivedstats['sd'] = np.sqrt((all_params.value[all_params['params']=='epsilon'].to_numpy()+1)*np.power(all_params.value[all_params['params']=='c'].to_numpy(),2))
 all_derivedstats['cv'] = all_derivedstats['sd'].to_numpy()/all_derivedstats['mu'].to_numpy()
-all_derivedstats['Schedule'] = np.repeat(['DRL','FMI'],int(all_derivedstats.shape[0]/2))
-all_derivedstats['Motivation'] = np.repeat(['Baseline','Prefeeding','Baseline','Prefeeding','Baseline','Prefeeding','Baseline','Prefeeding'],int(all_derivedstats.shape[0]/8))
-all_derivedstats['Interval'] = np.repeat([3,6,3,6],int(all_derivedstats.shape[0]/4))
+all_derivedstats['Schedule'] = all_params.Schedule[all_params.params=='epsilon'].tolist()
+all_derivedstats['Motivation'] = all_params.Motivation[all_params.params=='epsilon'].tolist()
+all_derivedstats['Interval'] = all_params.Interval[all_params.params=='epsilon'].tolist()
 all_derivedstats = all_derivedstats.melt(id_vars=['Schedule','Motivation','Interval'])
 all_derivedstats['mouseID'] = np.tile([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],int(all_derivedstats.shape[0]/16))
 all_derivedstats['InitRsp'] = np.tile(colwiseGA,int(all_derivedstats.shape[0]/16))
 all_derivedstats = all_derivedstats[all_derivedstats['mouseID']<=15]
+
 ```
+
+
+```python
+display(all_derivedstats)
+
+```
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Schedule</th>
+      <th>Motivation</th>
+      <th>Interval</th>
+      <th>variable</th>
+      <th>value</th>
+      <th>mouseID</th>
+      <th>InitRsp</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>DRL</td>
+      <td>Baseline</td>
+      <td>3</td>
+      <td>mu</td>
+      <td>3.091723</td>
+      <td>1</td>
+      <td>LP</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>DRL</td>
+      <td>Prefeeding</td>
+      <td>3</td>
+      <td>mu</td>
+      <td>3.303817</td>
+      <td>2</td>
+      <td>LP</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>DRL</td>
+      <td>Baseline</td>
+      <td>6</td>
+      <td>mu</td>
+      <td>5.712226</td>
+      <td>3</td>
+      <td>LP</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>DRL</td>
+      <td>Prefeeding</td>
+      <td>6</td>
+      <td>mu</td>
+      <td>6.243803</td>
+      <td>4</td>
+      <td>NP</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>FMI</td>
+      <td>Baseline</td>
+      <td>3</td>
+      <td>mu</td>
+      <td>3.150011</td>
+      <td>5</td>
+      <td>NP</td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <th>378</th>
+      <td>DRL</td>
+      <td>Baseline</td>
+      <td>6</td>
+      <td>cv</td>
+      <td>0.267984</td>
+      <td>11</td>
+      <td>LP</td>
+    </tr>
+    <tr>
+      <th>379</th>
+      <td>DRL</td>
+      <td>Prefeeding</td>
+      <td>6</td>
+      <td>cv</td>
+      <td>0.174283</td>
+      <td>12</td>
+      <td>LP</td>
+    </tr>
+    <tr>
+      <th>380</th>
+      <td>FMI</td>
+      <td>Baseline</td>
+      <td>3</td>
+      <td>cv</td>
+      <td>0.469293</td>
+      <td>13</td>
+      <td>LP</td>
+    </tr>
+    <tr>
+      <th>381</th>
+      <td>FMI</td>
+      <td>Prefeeding</td>
+      <td>3</td>
+      <td>cv</td>
+      <td>0.469293</td>
+      <td>14</td>
+      <td>LP</td>
+    </tr>
+    <tr>
+      <th>382</th>
+      <td>FMI</td>
+      <td>Baseline</td>
+      <td>6</td>
+      <td>cv</td>
+      <td>0.469293</td>
+      <td>15</td>
+      <td>NP</td>
+    </tr>
+  </tbody>
+</table>
+<p>360 rows × 7 columns</p>
+</div>
+
 
 
 ```python
@@ -932,30 +1086,107 @@ plt.rc('font', family='serif')
 plt.rc('xtick', labelsize='large')
 plt.rc('ytick', labelsize='large')
 fig3 = plt.figure(figsize=(16,12))
-sns.catplot(x='Interval',y='value',hue='Motivation',col='InitRsp',kind='bar',ci=68,data=all_derivedstats[(all_derivedstats['Schedule']=='FMI') & (all_derivedstats['variable']=='cv')])
-
+plt.subplot(2,2,1)
+sns.barplot(x="Interval",y="value",hue="Motivation",ci=95,data=all_derivedstats[((all_derivedstats['Schedule']=="DRL") & (all_derivedstats['variable']=="mu"))],estimator=np.mean)
+plt.ylabel('Gamma Mean (s)', fontsize=14)
+plt.xlabel('Interval (s)', fontsize=14)
+plt.title("DRL: Nose Poke", fontsize=14)
+plt.subplot(2,2,2)
+sns.barplot(x="Interval",y="value",hue="Motivation",ci=95,data=all_derivedstats[((all_derivedstats['Schedule']=="DRL") & (all_derivedstats['variable']=="mu"))],estimator=np.mean)
+plt.ylabel('Gamma Mean (s)', fontsize=14)
+plt.xlabel('Interval (s)', fontsize=14)
+plt.title("DRL: Lever Press", fontsize=14)
+plt.subplot(2,2,3)
+sns.barplot(x="Interval",y="value",hue="Motivation",ci=95,data=all_derivedstats[((all_derivedstats['Schedule']=="FMI") & (all_derivedstats['variable']=="mu"))],estimator=np.mean)
+plt.ylabel('Gamma Mean (s)', fontsize=14)
+plt.xlabel('Interval (s)', fontsize=14)
+plt.title("FMI: Nose Poke", fontsize=14)
+plt.subplot(2,2,4)
+sns.barplot(x="Interval",y="value",hue="Motivation",ci=95,data=all_derivedstats[((all_derivedstats['Schedule']=="FMI") & (all_derivedstats['variable']=="mu"))],estimator=np.mean)
+plt.ylabel('Gamma Mean (s)', fontsize=14)
+plt.xlabel('Interval (s)', fontsize=14)
+plt.title("FMI: Lever Press", fontsize=14)
+plt.tight_layout()
 ```
 
 
-
-
-    <seaborn.axisgrid.FacetGrid at 0x2644955a1c0>
-
-
-
-
-    <Figure size 1152x864 with 0 Axes>
-
-
-
     
-![png](output_21_2.png)
+![png](output_22_0.png)
     
 
 
-DATA ORGANIZED! READY FOR VISUALIZATION AND ANALYSIS
+
 
 
 ```python
-
+#Analysis of derived statistics; graphing then analysis
+plt.rc('font', family='serif')
+plt.rc('xtick', labelsize='large')
+plt.rc('ytick', labelsize='large')
+fig3 = plt.figure(figsize=(16,12))
+plt.subplot(2,2,1)
+sns.barplot(x="Interval",y="value",hue="Motivation",ci=95,data=all_derivedstats[((all_derivedstats['Schedule']=="DRL") & (all_derivedstats['variable']=="sd"))],estimator=np.mean)
+plt.ylabel('Gamma SD (s)', fontsize=14)
+plt.xlabel('Interval (s)', fontsize=14)
+plt.title("DRL: Nose Poke", fontsize=14)
+plt.subplot(2,2,2)
+sns.barplot(x="Interval",y="value",hue="Motivation",ci=95,data=all_derivedstats[((all_derivedstats['Schedule']=="DRL") & (all_derivedstats['variable']=="sd"))],estimator=np.mean)
+plt.ylabel('Gamma SD (s)', fontsize=14)
+plt.xlabel('Interval (s)', fontsize=14)
+plt.title("DRL: Lever Press", fontsize=14)
+plt.subplot(2,2,3)
+sns.barplot(x="Interval",y="value",hue="Motivation",ci=95,data=all_derivedstats[((all_derivedstats['Schedule']=="FMI") & (all_derivedstats['variable']=="sd"))],estimator=np.mean)
+plt.ylabel('Gamma SD (s)', fontsize=14)
+plt.xlabel('Interval (s)', fontsize=14)
+plt.title("FMI: Nose Poke", fontsize=14)
+plt.subplot(2,2,4)
+sns.barplot(x="Interval",y="value",hue="Motivation",ci=95,data=all_derivedstats[((all_derivedstats['Schedule']=="FMI") & (all_derivedstats['variable']=="sd"))],estimator=np.mean)
+plt.ylabel('Gamma SD (s)', fontsize=14)
+plt.xlabel('Interval (s)', fontsize=14)
+plt.title("FMI: Lever Press", fontsize=14)
+plt.tight_layout()
 ```
+
+
+    
+![png](output_24_0.png)
+    
+
+
+
+```python
+#Analysis of derived statistics; graphing then analysis
+plt.rc('font', family='serif')
+plt.rc('xtick', labelsize='large')
+plt.rc('ytick', labelsize='large')
+fig3 = plt.figure(figsize=(16,12))
+plt.subplot(2,2,1)
+sns.barplot(x="Interval",y="value",hue="Motivation",ci=95,data=all_derivedstats[((all_derivedstats['Schedule']=="DRL") & (all_derivedstats['variable']=="cv"))],estimator=np.mean)
+plt.ylabel('Gamma CV', fontsize=14)
+plt.xlabel('Interval (s)', fontsize=14)
+plt.title("DRL: Nose Poke", fontsize=14)
+plt.subplot(2,2,2)
+sns.barplot(x="Interval",y="value",hue="Motivation",ci=95,data=all_derivedstats[((all_derivedstats['Schedule']=="DRL") & (all_derivedstats['variable']=="cv"))],estimator=np.mean)
+plt.ylabel('Gamma CV', fontsize=14)
+plt.xlabel('Interval (s)', fontsize=14)
+plt.title("DRL: Lever Press", fontsize=14)
+plt.subplot(2,2,3)
+sns.barplot(x="Interval",y="value",hue="Motivation",ci=95,data=all_derivedstats[((all_derivedstats['Schedule']=="FMI") & (all_derivedstats['variable']=="cv"))],estimator=np.mean)
+plt.ylabel('Gamma CV', fontsize=14)
+plt.xlabel('Interval (s)', fontsize=14)
+plt.title("FMI: Nose Poke", fontsize=14)
+plt.subplot(2,2,4)
+sns.barplot(x="Interval",y="value",hue="Motivation",ci=95,data=all_derivedstats[((all_derivedstats['Schedule']=="FMI") & (all_derivedstats['variable']=="cv"))],estimator=np.mean)
+plt.ylabel('Gamma CV', fontsize=14)
+plt.xlabel('Interval (s)', fontsize=14)
+plt.title("FMI: Lever Press", fontsize=14)
+plt.tight_layout()
+```
+
+
+    
+![png](output_25_0.png)
+    
+
+
+To analyze the above graphs data will be passed to an R script to analyze with a Bayesian repeated measures ANOVA. 
