@@ -18,47 +18,60 @@ library(BayesFactor)
 #load and prep data
 data <- read.csv("topography_gamma.csv")
 data$Schedule<-factor(data$Schedule,levels=c("DRL","FMI"))
-data$Motivation<-factor(data$Motivation,levels=c("Baseline","Prefeeding"))
+data$Motivation<-factor(data$Motivation,levels=c("B","PF"))
 data$Interval<-factor(data$Interval,levels=c("3","6"))
+data$InitRsp<-factor(data$InitRsp,levels=c("NPM","LPM"))
+
 ```
 
-# 1.Analysis of Gamma Mean (mu)
+# 1.1 Analysis of Gamma Mean 
 
 ```{r}
-bayesRM_mu <- anovaBF(lnValue~Schedule*Interval*Motivation,data=data[data$variable=="mu",],whichRandom="mouseID")
+bayesRM_mu <- anovaBF(lnValue~Interval*Motivation*InitRsp*Schedule,data=data[which(data$variable=="mu"),],whichRandom="mouseID")
 bayesRM_mu
 ```
 
-```{r, fig.width = 18}
+```{r, fig.width = 36, fig.height = 36}
 plot(bayesRM_mu)
 
 ```
 
-This indicates we have strong evidence for a schedule*motivation interaction and a main effect of interval for the mean of the gamma. The Bayes factor is 404.85; the next highest Bayes factor is for the model containing only an effect of motivation and interval with a Bayes factor of 350. Note that even if the % error is taken into account the more complex model is still favored. 
+# 1.2 Interaction Probes
 
-# 2.Analysis of Gamma SD (sd)
 
 ```{r}
-bayesRM_sd <- anovaBF(lnValue~Schedule*Interval*Motivation,data=data[data$variable=="sd",],whichRandom="mouseID")
+bayesRM_mu_DRL <- anovaBF(lnValue~Motivation,data=data[which(data$variable=="mu" & data$Schedule=="DRL"),],whichRandom="mouseID")
+bayesRM_mu_DRL
+plot(bayesRM_mu_DRL)
+```
+
+```{r}
+bayesRM_mu_FMI <- anovaBF(lnValue~Motivation,data=data[which(data$variable=="mu" & data$Schedule=="FMI"),],whichRandom="mouseID")
+bayesRM_mu_FMI
+plot(bayesRM_mu_FMI)
+```
+
+
+# 2. Analysis of Gamma SD 
+
+```{r}
+bayesRM_sd <- anovaBF(lnValue~Interval*Motivation*InitRsp*Schedule,data=data[which(data$variable=="sd"),],whichRandom="mouseID")
 bayesRM_sd
 ```
 
-```{r, fig.width = 18}
+```{r, fig.width = 36, fig.height = 36}
 plot(bayesRM_sd)
 
 ```
-This indicates that variance is relatively insensitive to manipulation, scaling only with the interval. Indeed, it had the largest bayes factor of 101.16
 
-# 3.Analysis of Gamma CV (cv)
+# 3. Analysis of Gamma CV 
 
 ```{r}
-bayesRM_cv <- anovaBF(lnValue~Schedule*Interval*Motivation,data=data[data$variable=="cv",],whichRandom="mouseID")
+bayesRM_cv <- anovaBF(lnValue~Interval*Motivation*InitRsp*Schedule,data=data[which(data$variable=="cv"),],whichRandom="mouseID")
 bayesRM_cv
 ```
 
-```{r, fig.width = 18}
+```{r, fig.width = 36, fig.height = 36}
 plot(bayesRM_cv)
 
 ```
-
-Analysis of the CV reveals slight evidence for an effect of motivation on normalized variance with a Bayes Factor of 1.26. Given the prior effects reported for the mean and sd of the gamma, the motivation induced change in variance is driven by motivation affecting the mean of responses but not the variability. 

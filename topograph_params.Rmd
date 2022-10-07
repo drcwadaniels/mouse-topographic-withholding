@@ -1,0 +1,98 @@
+---
+title: 'Topograph Analysis: Gamma Stats'
+author: "Carter Daniels"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+
+wd_path <- "E:/Dropbox/2 All of Carter's Stuff/Carter Local/Jupyter Lab"
+setwd(wd_path)
+
+library(BayesFactor)
+```
+
+```{r}
+
+#load and prep data
+data <- read.csv("topography_params.csv")
+data$Schedule<-factor(data$Schedule,levels=c("DRL","FMI"))
+data$Motivation<-factor(data$Motivation,levels=c("B","PF"))
+data$Interval<-factor(data$Interval,levels=c("3","6"))
+data$InitRsp<-factor(data$InitRsp,levels=c("NPM","LPM"))
+
+```
+
+# 1 Analysis of Epsilon
+
+```{r}
+bayesRM_epsilon <- anovaBF(lnValue~Interval*Motivation*InitRsp*Schedule,data=data[which(data$Params=="epsilon"),],whichRandom="mouseID")
+bayesRM_epsilon
+```
+
+```{r, fig.width = 36, fig.height = 36}
+plot(bayesRM_epsilon)
+```
+
+# 2 Analysis of c
+
+```{r}
+bayesRM_c<- anovaBF(lnValue~Interval*Motivation*InitRsp*Schedule,data=data[which(data$Params=="c"),],whichRandom="mouseID")
+bayesRM_c
+```
+
+```{r, fig.width = 36, fig.height = 36}
+plot(bayesRM_c)
+
+```
+
+# 3 Analysis of P
+
+```{r}
+bayesRM_P<- anovaBF(lnValue~Interval*Motivation*InitRsp*Schedule,data=data[which(data$Params=="P"),],whichRandom="mouseID")
+bayesRM_P
+```
+
+```{r, fig.width = 36, fig.height = 36}
+plot(bayesRM_P)
+
+```
+
+# 4 Analysis of Kburst
+
+```{r}
+bayesRM_Kburst<- anovaBF(lnValue~Interval*Motivation*InitRsp*Schedule,data=data[which(data$Params=="Kburst"),],whichRandom="mouseID")
+bayesRM_Kburst
+```
+
+
+```{r, fig.width = 36, fig.height - 36}
+plot(bayesRM_Kburst)
+
+```
+
+
+# 5 Analysis of q (DRL only)
+
+```{r}
+bayesRM_q<- anovaBF(lnValue~Interval*Motivation*InitRsp,data=data[which(data$Params=="q" & data$Schedule=="DRL"),],whichRandom="mouseID")
+bayesRM_q
+```
+
+```{r, fig.width = 24, fig.height = 24}
+plot(bayesRM_q)
+
+```
+
+# 5 Analysis of Klapse (DRL only)
+
+```{r}
+bayesRM_Klapse<- anovaBF(lnValue~Interval*Motivation*InitRsp,data=data[which(data$Params=="Klapse" & data$Schedule=="DRL"),],whichRandom="mouseID")
+bayesRM_Klapse
+```
+
+```{r, fig.width = 24, fig.height = 24}
+plot(bayesRM_Klapse)
+
+```
